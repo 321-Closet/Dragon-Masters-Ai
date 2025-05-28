@@ -51,12 +51,15 @@ export namespace n_InstanceReplicator {
             let offset = 0;
 
             for (const primitive of serverPrimitives) {
+
+                if (primitive.IsA("Part")) {
                 let serializedId = primitive.GetTags()[0];
                 buffer.writestring(newBufferObject, offset, serializedId, serializedId.size());
-                buffer.writei32(newBufferObject, offset + serializedId.size(), 0);
-                buffer.writei32(newBufferObject, (offset + serializedId.size()) + 4, 0);
-                buffer.writei32(newBufferObject, (offset + serializedId.size() + 4) + 4, 0);
+                buffer.writei32(newBufferObject, offset + serializedId.size(), primitive.Position.X);
+                buffer.writei32(newBufferObject, (offset + serializedId.size()) + 4, primitive.Position.Y);
+                buffer.writei32(newBufferObject, (offset + serializedId.size() + 4) + 4, primitive.Position.Z);
                 offset += 48; // bytes leaving spot for 3 signed 32 bit integers or floats to be written
+                }
             }
 
             return newBufferObject;
@@ -66,88 +69,20 @@ export namespace n_InstanceReplicator {
     }
 
     // Call with argument #1 being a formatted buffer object with SetBuffer
-    export function WriteIntegerToBuffer(setBufferObject: buffer, i32: number, serializedId: string) {
+    export function WriteIntegerToBuffer(setBufferObject: buffer, i32: number, serializedId: string, _offset: number) {
         const upperLimit = 2147483647;
         const lowerLimit = -2147483648;
-        let offset = 0;
 
         let integer = math.clamp(i32, lowerLimit, upperLimit);
-
-            while (offset + 36 <= buffer.len(setBufferObject)) {
-
-                if (offset > buffer.len(setBufferObject)) {
-                    break
-                }
-                let id = buffer.readstring(setBufferObject, offset, serializedId.size());
-                //warn(id === serializedId)
-                const i32Offset1 = offset + serializedId.size();
-                const i32Offset2 = i32Offset1 + 4;
-                const i32Offset3 = i32Offset2 + 4;
-                if (id !== serializedId) {
-                    offset += 48;
-                } else if (id === serializedId) {
-                    let currentNumber = buffer.readi32(setBufferObject, i32Offset1);
-                   // warn(currentNumber)
-                    if (currentNumber > 0) {
-                        currentNumber = buffer.readi32(setBufferObject, i32Offset2);
-
-                        if (currentNumber > 0) {
-                            buffer.writei32(setBufferObject, i32Offset3, integer);
-                        } else {
-                            buffer.writei32(setBufferObject, i32Offset2, integer);
-                        }
-                        
-                        
-                    } else if (currentNumber === 0) {
-                        buffer.writei32(setBufferObject, i32Offset1, integer);
-                    }  
-                    break
-                }
-            }
-
-            return undefined;
+        buffer.writei32(setBufferObject, _offset, integer);
     }
 
-    export function WriteFloatToBuffer(setBufferObject: buffer, f32: number, serializedId: string) {
+    export function WriteFloatToBuffer(setBufferObject: buffer, f32: number, serializedId: string, _offset: number) {
        const upperLimit = 2147483647;
         const lowerLimit = -2147483648;
-        let offset = 0;
 
         let integer = math.clamp(f32, lowerLimit, upperLimit);
-
-            while (offset + 36 <= buffer.len(setBufferObject)) {
-
-                if (offset > buffer.len(setBufferObject)) {
-                    break
-                }
-                let id = buffer.readstring(setBufferObject, offset, serializedId.size());
-                //warn(id === serializedId)
-                const f32Offset1 = offset + serializedId.size();
-                const f32Offset2 = f32Offset1 + 4;
-                const f32Offset3 = f32Offset2 + 4;
-                if (id !== serializedId) {
-                    offset += 48;
-                } else if (id === serializedId) {
-                    let currentNumber = buffer.readf32(setBufferObject, f32Offset1);
-                   // warn(currentNumber)
-                    if (currentNumber > 0) {
-                        currentNumber = buffer.readf32(setBufferObject, f32Offset2);
-
-                        if (currentNumber > 0) {
-                            buffer.writef32(setBufferObject, f32Offset3, integer);
-                        } else {
-                            buffer.writef32(setBufferObject, f32Offset2, integer);
-                        }
-                        
-                        
-                    } else if (currentNumber === 0) {
-                        buffer.writef32(setBufferObject, f32Offset1, integer);
-                    }  
-                    break
-                }
-            }
-
-            return undefined;
+        buffer.writef32(setBufferObject, _offset, f32)
     }
 
     /* Takes in a clone instance of a original instance, and creates 2 tags for it, one is the tag applied
